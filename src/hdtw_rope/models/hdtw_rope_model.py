@@ -13,7 +13,7 @@ from hdtw_rope.alignment.soft_dtw import SoftDTWAligner
 from hdtw_rope.clocks.extract import LatentClockExtractor
 from hdtw_rope.models.cross_attention import BidirectionalCrossAttentionLayer
 from hdtw_rope.models.projections import ClockAdapter, FeatureProjection
-from hdtw_rope.rotary.frequencies import ClockFrequencyMap
+from hdtw_rope.rotary.frequencies import ClockFrequencyMap, FrequencyMode
 from hdtw_rope.rotary.transport import ClockRotaryEmbedding
 from hdtw_rope.types import AlignmentOutput, ClockOutput
 
@@ -104,7 +104,7 @@ class HDTWRoPEModel(nn.Module):
         clock_components: Sequence[str],
         cross_attention_layers: int = 2,
         dropout: float = 0.1,
-        frequency_mode: str = "clock_partitioned",
+        frequency_mode: FrequencyMode = "clock_partitioned",
         partition: Mapping[str, float] | None = None,
         family_components: Mapping[str, Sequence[str]] | None = None,
         learn_clock_adapters: bool = False,
@@ -128,7 +128,7 @@ class HDTWRoPEModel(nn.Module):
             mode=frequency_mode,
             partition=partition,
             family_components=family_components,
-        )  # type: ignore[arg-type]
+        )
         rotary = ClockRotaryEmbedding(frequency_map)
         self.layers = nn.ModuleList(
             BidirectionalCrossAttentionLayer(
