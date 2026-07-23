@@ -67,12 +67,11 @@ def validate_config(config: Mapping[str, Any]) -> None:
     if not bool(rotary.get("shared_between_modalities", False)):
         raise ConfigError("version 0.1 requires a shared modality frequency map")
     partition = rotary.get("partition", {})
-    if rotary.get("frequency_mode") == "clock_partitioned":
-        if (
-            not isinstance(partition, dict)
-            or sum(float(value) for value in partition.values()) > 1.0 + 1e-6
-        ):
-            raise ConfigError("rotary.partition must be a mapping summing to at most one")
+    if rotary.get("frequency_mode") == "clock_partitioned" and (
+        not isinstance(partition, dict)
+        or sum(float(value) for value in partition.values()) > 1.0 + 1e-6
+    ):
+        raise ConfigError("rotary.partition must be a mapping summing to at most one")
     if int(model.get("cross_attention_layers", 0)) <= 0:
         raise ConfigError("model.cross_attention_layers must be positive")
     if int(training.get("batch_size", 0)) <= 0:
