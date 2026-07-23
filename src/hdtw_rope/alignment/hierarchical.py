@@ -93,7 +93,10 @@ class MultiLevelHierarchicalAligner(nn.Module):
             ]
             if missing:
                 raise KeyError(f"level {level!r} missing from {', '.join(missing)}")
-            outputs[level] = self.aligners[level](
+            aligner = self.aligners[level]
+            if not isinstance(aligner, HierarchicalAligner):
+                raise TypeError(f"level {level!r} does not contain a HierarchicalAligner")
+            outputs[level] = aligner(
                 source[level],
                 target[level],
                 source_masks[level],
