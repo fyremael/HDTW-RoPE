@@ -53,7 +53,7 @@ class HierarchicalAligner(nn.Module):
         source_common = self.source_projection(source)
         target_common = self.target_projection(target)
         cost = self.cost(source_common, target_common, source_mask, target_mask)
-        return self.aligner(cost, source_mask, target_mask, band)
+        return self.aligner.forward(cost, source_mask, target_mask, band)
 
 
 class MultiLevelHierarchicalAligner(nn.Module):
@@ -96,7 +96,7 @@ class MultiLevelHierarchicalAligner(nn.Module):
             aligner = self.aligners[level]
             if not isinstance(aligner, HierarchicalAligner):
                 raise TypeError(f"level {level!r} does not contain a HierarchicalAligner")
-            outputs[level] = aligner(
+            outputs[level] = aligner.forward(
                 source[level],
                 target[level],
                 source_masks[level],
