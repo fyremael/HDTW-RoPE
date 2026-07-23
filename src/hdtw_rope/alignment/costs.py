@@ -58,9 +58,7 @@ class PairwiseCost(nn.Module):
             source_norm = (source32 * source32).sum(dim=-1, keepdim=True)
             target_norm = (target32 * target32).sum(dim=-1).unsqueeze(1)
             cost = (
-                source_norm
-                + target_norm
-                - 2.0 * torch.einsum("btd,bsd->bts", source32, target32)
+                source_norm + target_norm - 2.0 * torch.einsum("btd,bsd->bts", source32, target32)
             ).clamp_min(0.0)
         elif self.mode == "bilinear":
             assert self.weight is not None

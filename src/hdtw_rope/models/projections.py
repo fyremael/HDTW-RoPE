@@ -9,9 +9,7 @@ from torch import Tensor, nn
 class FeatureProjection(nn.Module):
     """Layer-normalized projection into a shared feature space."""
 
-    def __init__(
-        self, input_dim: int, output_dim: int, *, dropout: float = 0.0
-    ) -> None:
+    def __init__(self, input_dim: int, output_dim: int, *, dropout: float = 0.0) -> None:
         super().__init__()
         self.norm = nn.LayerNorm(input_dim)
         self.linear = nn.Linear(input_dim, output_dim)

@@ -64,7 +64,11 @@ def _clock_inputs(batch, components: list[str]):
     target_masks = dict(batch.lyric_coordinate_masks)
     source_coordinates.setdefault("absolute_seconds", batch.audio_time_seconds)
     source_masks.setdefault("absolute_seconds", batch.audio_mask)
-    aligned_components = [component for component in components if component in source_coordinates or component in target_coordinates]
+    aligned_components = [
+        component
+        for component in components
+        if component in source_coordinates or component in target_coordinates
+    ]
     return source_coordinates, target_coordinates, source_masks, target_masks, aligned_components
 
 
@@ -100,13 +104,31 @@ def _build_modules(config: Mapping[str, Any], device: torch.device):
 
 
 def _forward(config: Mapping[str, Any], batch, builder, model):
-    source_coordinates, target_coordinates, source_masks, target_masks, aligned_components = _clock_inputs(batch, list(config["clock"]["components"]))
+    source_coordinates, target_coordinates, source_masks, target_masks, aligned_components = (
+        _clock_inputs(batch, list(config["clock"]["components"]))
+    )
     builder.aligned_components = tuple(aligned_components)
     band = None
     if bool(config["alignment"]["band"]["enabled"]):
-        band = diagonal_band_mask(batch.audio_mask, batch.lyric_mask, min(int(config["alignment"]["band"]["half_width"]), batch.lyric_mask.shape[1]))
-    clocks, alignment = builder(batch.audio_features, batch.lyric_features, batch.audio_mask, batch.lyric_mask, source_coordinates, target_coordinates, source_masks, target_masks, band)
-    output = model(batch.audio_features, batch.lyric_features, batch.audio_mask, batch.lyric_mask, clocks)
+        band = diagonal_band_mask(
+            batch.audio_mask,
+            batch.lyric_mask,
+            min(int(config["alignment"]["band"]["half_width"]), batch.lyric_mask.shape[1]),
+        )
+    clocks, alignment = builder(
+        batch.audio_features,
+        batch.lyric_features,
+        batch.audio_mask,
+        batch.lyric_mask,
+        source_coordinates,
+        target_coordinates,
+        source_masks,
+        target_masks,
+        band,
+    )
+    output = model(
+        batch.audio_features, batch.lyric_features, batch.audio_mask, batch.lyric_mask, clocks
+    )
     alignments = {component: alignment for component in aligned_components}
     return clocks, alignment, alignments, output
 
@@ -123,47 +145,102 @@ def precompute_main(argv: list[str] | None = None) -> None:
     batch = _synthetic_batch(config, args.batch_size).to(device)
     builder, model = _build_modules(config, device)
     del model
-    source_coordinates, target_coordinates, source_masks, target_masks, aligned_components = _clock_inputs(batch, list(config["clock"]["components"]))
+    source_coordinates, target_coordinates, source_masks, target_masks, aligned_components = (
+        _clock_inputs(batch, list(config["clock"]["components"]))
+    )
     builder.aligned_components = tuple(aligned_components)
-    band = diagonal_band_mask(batch.audio_mask, batch.lyric_mask, min(16, batch.lyric_mask.shape[1]))
-    clocks, alignment = builder(batch.audio_features, batch.lyric_features, batch.audio_mask, batch.lyric_mask, source_coordinates, target_coordinates, source_masks, target_masks, band)
+    band = diagonal_band_mask(
+        batch.audio_mask, batch.lyric_mask, min(16, batch.lyric_mask.shape[1])
+    )
+    clocks, alignment = builder(
+        batch.audio_features,
+        batch.lyric_features,
+        batch.audio_mask,
+        batch.lyric_mask,
+        source_coordinates,
+        target_coordinates,
+        source_masks,
+        target_masks,
+        band,
+    )
     destination = Path(args.output)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    torch.save({"schema_version": CLOCK_SCHEMA_VERSION, "sample_ids": batch.sample_ids, "source_clock": clocks.source_clock.detach().cpu(), "target_clock": clocks.target_clock.detach().cpu(), "source_valid": clocks.source_valid.cpu(), "target_valid": clocks.target_valid.cpu(), "alignment_mass": alignment.mass.detach().cpu()}, destination)
+    torch.save(
+        {
+            "schema_version": CLOCK_SCHEMA_VERSION,
+            "sample_ids": batch.sample_ids,
+            "source_clock": clocks.source_clock.detach().cpu(),
+            "target_clock": clocks.target_clock.detach().cpu(),
+            "source_valid": clocks.source_valid.cpu(),
+            "target_valid": clocks.target_valid.cpu(),
+            "alignment_mass": alignment.mass.detach().cpu(),
+        },
+        destination,
+    )
     print(destination)
 
 
 def train_main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(description="Run the correctness-first synthetic training path")
+    parser = argparse.ArgumentParser(
+        description="Run the correctness-first synthetic training path"
+    )
     parser.add_argument("--config", default="configs/prototype.yaml")
     parser.add_argument("--steps", type=int, default=1)
     parser.add_argument("--output-dir", default="artifacts/smoke-run")
     parser.add_argument("--batch-size", type=int, default=None)
     args = parser.parse_args(argv)
     config = load_config(args.config)
-    seed_everything(int(config["project"]["seed"]), deterministic=bool(config["runtime"]["deterministic"]))
+    seed_everything(
+        int(config["project"]["seed"]), deterministic=bool(config["runtime"]["deterministic"])
+    )
     device = _device(config)
     batch = _synthetic_batch(config, args.batch_size).to(device)
     builder, model = _build_modules(config, device)
     criterion = HDTWRoPELoss()
     parameters = list(builder.parameters()) + list(model.parameters())
-    optimizer = torch.optim.AdamW(parameters, lr=float(config["training"]["learning_rate"]), weight_decay=float(config["training"]["weight_decay"]))
+    optimizer = torch.optim.AdamW(
+        parameters,
+        lr=float(config["training"]["learning_rate"]),
+        weight_decay=float(config["training"]["weight_decay"]),
+    )
     final_metrics: dict[str, torch.Tensor | float] = {}
     for step in range(args.steps):
         optimizer.zero_grad(set_to_none=True)
         clocks, alignment, alignments, output = _forward(config, batch, builder, model)
-        source_index = torch.linspace(0.0, 1.0, batch.audio_mask.shape[1], device=device).expand(batch.audio_mask.shape[0], -1)
-        target_index = torch.linspace(0.0, 1.0, batch.lyric_mask.shape[1], device=device).expand(batch.lyric_mask.shape[0], -1)
-        loss = criterion(similarity=output.similarity, alignments=alignments, clocks=clocks, source_index_coordinate=source_index, target_index_coordinate=target_index)
+        source_index = torch.linspace(0.0, 1.0, batch.audio_mask.shape[1], device=device).expand(
+            batch.audio_mask.shape[0], -1
+        )
+        target_index = torch.linspace(0.0, 1.0, batch.lyric_mask.shape[1], device=device).expand(
+            batch.lyric_mask.shape[0], -1
+        )
+        loss = criterion(
+            similarity=output.similarity,
+            alignments=alignments,
+            clocks=clocks,
+            source_index_coordinate=source_index,
+            target_index_coordinate=target_index,
+        )
         loss.total.backward()
         torch.nn.utils.clip_grad_norm_(parameters, float(config["training"]["gradient_clip_norm"]))
         optimizer.step()
-        final_metrics = {"step": step, "loss/total": loss.total.detach(), **{f"loss/{name}": value.detach() for name, value in loss.terms.items()}, **alignment_diagnostics(alignment), **clock_diagnostics(clocks)}
+        final_metrics = {
+            "step": step,
+            "loss/total": loss.total.detach(),
+            **{f"loss/{name}": value.detach() for name, value in loss.terms.items()},
+            **alignment_diagnostics(alignment),
+            **clock_diagnostics(clocks),
+        }
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    torch.save({"builder": builder.state_dict(), "model": model.state_dict(), "config": config}, output_dir / "checkpoint.pt")
+    torch.save(
+        {"builder": builder.state_dict(), "model": model.state_dict(), "config": config},
+        output_dir / "checkpoint.pt",
+    )
     write_metrics(output_dir / "metrics.json", final_metrics)
-    save_run_manifest(output_dir / "run_manifest.yaml", build_run_manifest(config=config, clock_schema_version=CLOCK_SCHEMA_VERSION))
+    save_run_manifest(
+        output_dir / "run_manifest.yaml",
+        build_run_manifest(config=config, clock_schema_version=CLOCK_SCHEMA_VERSION),
+    )
     print(json.dumps({"output_dir": str(output_dir), "metrics": str(output_dir / "metrics.json")}))
 
 
@@ -186,7 +263,11 @@ def evaluate_main(argv: list[str] | None = None) -> None:
     builder.eval()
     model.eval()
     clocks, alignment, _, output = _forward(config, batch, builder, model)
-    metrics: dict[str, torch.Tensor | float] = {**retrieval_metrics(output.similarity), **alignment_diagnostics(alignment), **clock_diagnostics(clocks)}
+    metrics: dict[str, torch.Tensor | float] = {
+        **retrieval_metrics(output.similarity),
+        **alignment_diagnostics(alignment),
+        **clock_diagnostics(clocks),
+    }
     write_metrics(args.output, metrics)
     print(args.output)
 

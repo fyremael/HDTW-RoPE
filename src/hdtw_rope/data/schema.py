@@ -68,9 +68,7 @@ class HierarchyLevel:
         if torch.any(self.unit_end[self.valid_mask] < self.unit_start[self.valid_mask]):
             raise InvalidHierarchyError(f"{name} has an end before its start")
         n = self.unit_start.shape[0]
-        valid_parent = (self.parent_id == -1) | (
-            (self.parent_id >= 0) & (self.parent_id < n)
-        )
+        valid_parent = (self.parent_id == -1) | ((self.parent_id >= 0) & (self.parent_id < n))
         if not torch.all(valid_parent | ~self.valid_mask):
             raise InvalidHierarchyError(f"{name} contains an out-of-range parent id")
 
@@ -130,9 +128,7 @@ class LyricMusicSample:
             for name, coordinate in coordinates.items():
                 require_rank(f"{modality}_coordinates[{name!r}]", coordinate, 1)
                 if coordinate.shape[0] != mask.shape[0]:
-                    raise InvalidShapeError(
-                        f"{modality} coordinate {name!r} has wrong length"
-                    )
+                    raise InvalidShapeError(f"{modality} coordinate {name!r} has wrong length")
                 require_finite(f"{modality}_coordinates[{name!r}]", coordinate, mask)
 
 

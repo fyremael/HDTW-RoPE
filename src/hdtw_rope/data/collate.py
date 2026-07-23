@@ -41,9 +41,7 @@ def collate_lyric_music(samples: Sequence[LyricMusicSample]) -> LyricMusicBatch:
             for sample in samples:
                 base_mask = sample.audio_mask if modality == "audio" else sample.lyric_mask
                 mapping = (
-                    sample.audio_coordinates
-                    if modality == "audio"
-                    else sample.lyric_coordinates
+                    sample.audio_coordinates if modality == "audio" else sample.lyric_coordinates
                 )
                 if name in mapping:
                     rows.append(mapping[name])
@@ -55,12 +53,8 @@ def collate_lyric_music(samples: Sequence[LyricMusicSample]) -> LyricMusicBatch:
             masks[name] = _pad_sequence(row_masks, padding_value=False)
         return values, masks
 
-    audio_coordinates, audio_coordinate_masks = collect_coordinates(
-        "audio", audio_coordinate_names
-    )
-    lyric_coordinates, lyric_coordinate_masks = collect_coordinates(
-        "lyric", lyric_coordinate_names
-    )
+    audio_coordinates, audio_coordinate_masks = collect_coordinates("audio", audio_coordinate_names)
+    lyric_coordinates, lyric_coordinate_masks = collect_coordinates("lyric", lyric_coordinate_names)
 
     hierarchy_names = sorted({name for sample in samples for name in sample.hierarchy})
     hierarchy: dict[str, dict[str, Tensor]] = {}
@@ -97,16 +91,10 @@ def collate_lyric_music(samples: Sequence[LyricMusicSample]) -> LyricMusicBatch:
     return LyricMusicBatch(
         sample_ids=tuple(sample.sample_id for sample in samples),
         audio_features=_pad_sequence([sample.audio_features for sample in samples]),
-        audio_mask=_pad_sequence(
-            [sample.audio_mask for sample in samples], padding_value=False
-        ),
-        audio_time_seconds=_pad_sequence(
-            [sample.audio_time_seconds for sample in samples]
-        ),
+        audio_mask=_pad_sequence([sample.audio_mask for sample in samples], padding_value=False),
+        audio_time_seconds=_pad_sequence([sample.audio_time_seconds for sample in samples]),
         lyric_features=_pad_sequence([sample.lyric_features for sample in samples]),
-        lyric_mask=_pad_sequence(
-            [sample.lyric_mask for sample in samples], padding_value=False
-        ),
+        lyric_mask=_pad_sequence([sample.lyric_mask for sample in samples], padding_value=False),
         lyric_texts=tuple(sample.lyric_text for sample in samples),
         lyric_unit_types=tuple(sample.lyric_unit_type for sample in samples),
         audio_coordinates=audio_coordinates,

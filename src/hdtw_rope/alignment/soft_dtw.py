@@ -128,7 +128,9 @@ class SoftDTWAligner(nn.Module):
         band_mask: Tensor | None = None,
     ) -> AlignmentOutput:
         original_requires_grad = cost.requires_grad
-        working_cost = cost if original_requires_grad else cost.detach().clone().requires_grad_(True)
+        working_cost = (
+            cost if original_requires_grad else cost.detach().clone().requires_grad_(True)
+        )
         with torch.enable_grad():
             values32 = soft_dtw_value(
                 working_cost,

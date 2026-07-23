@@ -52,9 +52,7 @@ def _monotone_warp(u: Tensor, family: WarpFamily) -> Tensor:
 def _latent_content(u: Tensor, dim: int) -> Tensor:
     frequencies = torch.arange(1, dim // 4 + 1, dtype=u.dtype, device=u.device)
     phase = 2.0 * torch.pi * u[:, None] * frequencies[None, :]
-    features = torch.cat(
-        (torch.sin(phase), torch.cos(phase), u[:, None], u[:, None] ** 2), dim=-1
-    )
+    features = torch.cat((torch.sin(phase), torch.cos(phase), u[:, None], u[:, None] ** 2), dim=-1)
     if features.shape[1] < dim:
         features = torch.nn.functional.pad(features, (0, dim - features.shape[1]))
     return features[:, :dim]

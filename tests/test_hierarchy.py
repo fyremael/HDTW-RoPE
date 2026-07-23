@@ -19,7 +19,9 @@ def test_hierarchy_containment_zero_and_positive() -> None:
 
 
 def test_parent_interval_gather() -> None:
-    lower, upper, valid = parent_intervals(torch.tensor([0, 0, 1]), torch.tensor([0.0, 0.5]), torch.tensor([0.5, 1.0]))
+    lower, upper, valid = parent_intervals(
+        torch.tensor([0, 0, 1]), torch.tensor([0.0, 0.5]), torch.tensor([0.5, 1.0])
+    )
     torch.testing.assert_close(lower, torch.tensor([0.0, 0.0, 0.5]))
     torch.testing.assert_close(upper, torch.tensor([0.5, 0.5, 1.0]))
     assert valid.all()

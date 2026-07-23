@@ -43,7 +43,10 @@ def validate_config(config: Mapping[str, Any]) -> None:
     _require(config, "evaluation", dict, "config")
 
     _require(project, "seed", int, "project")
-    if runtime.get("alignment_precision") != "float32" or runtime.get("phase_precision") != "float32":
+    if (
+        runtime.get("alignment_precision") != "float32"
+        or runtime.get("phase_precision") != "float32"
+    ):
         raise ConfigError("alignment and phase precision must be float32 in version 0.1")
     if alignment.get("method") not in {"hard_dtw", "soft_dtw"}:
         raise ConfigError("alignment.method must be hard_dtw or soft_dtw")
@@ -64,7 +67,10 @@ def validate_config(config: Mapping[str, Any]) -> None:
         raise ConfigError("version 0.1 requires a shared modality frequency map")
     partition = rotary.get("partition", {})
     if rotary.get("frequency_mode") == "clock_partitioned":
-        if not isinstance(partition, dict) or sum(float(value) for value in partition.values()) > 1.0 + 1e-6:
+        if (
+            not isinstance(partition, dict)
+            or sum(float(value) for value in partition.values()) > 1.0 + 1e-6
+        ):
             raise ConfigError("rotary.partition must be a mapping summing to at most one")
     if int(model.get("cross_attention_layers", 0)) <= 0:
         raise ConfigError("model.cross_attention_layers must be positive")

@@ -12,13 +12,16 @@ from torch import Tensor
 from hdtw_rope.types import AlignmentOutput, ClockOutput
 
 
-def alignment_diagnostics(alignment: AlignmentOutput, *, prefix: str = "alignment") -> dict[str, Tensor]:
+def alignment_diagnostics(
+    alignment: AlignmentOutput, *, prefix: str = "alignment"
+) -> dict[str, Tensor]:
     row_mass = alignment.mass.sum(dim=-1)
     probabilities = alignment.mass / row_mass.unsqueeze(-1).clamp_min(1e-12)
     entropy = -(probabilities.clamp_min(1e-12) * probabilities.clamp_min(1e-12).log()).sum(dim=-1)
     return {
         f"{prefix}/soft_dtw": alignment.value.detach().mean(),
-        f"{prefix}/entropy": (entropy * alignment.valid_rows).sum() / alignment.valid_rows.sum().clamp_min(1),
+        f"{prefix}/entropy": (entropy * alignment.valid_rows).sum()
+        / alignment.valid_rows.sum().clamp_min(1),
         f"{prefix}/valid_row_rate": alignment.valid_rows.float().mean(),
         f"{prefix}/valid_col_rate": alignment.valid_cols.float().mean(),
         f"{prefix}/mass_sum": alignment.mass.detach().sum(),

@@ -8,7 +8,15 @@ from hdtw_rope.rotary.transport import ClockRotaryEmbedding, apply_rotary_pairs
 
 
 def _fixed_rotary(num_heads: int = 2, rotary_dim: int = 8) -> ClockRotaryEmbedding:
-    return ClockRotaryEmbedding(ClockFrequencyMap(num_heads=num_heads, rotary_dim=rotary_dim, component_names=["position"], mode="fixed_log"), phase_modulo=False)
+    return ClockRotaryEmbedding(
+        ClockFrequencyMap(
+            num_heads=num_heads,
+            rotary_dim=rotary_dim,
+            component_names=["position"],
+            mode="fixed_log",
+        ),
+        phase_modulo=False,
+    )
 
 
 def test_rotary_transport_preserves_norms() -> None:
@@ -25,8 +33,12 @@ def test_standard_rope_equivalence() -> None:
     clock = positions.unsqueeze(-1)
     mask = torch.ones_like(clock, dtype=torch.bool)
     q_rot, k_rot = _fixed_rotary()(q, k, clock, clock, mask, mask)
-    torch.testing.assert_close(q_rot, reference_rope(q, positions, rotary_dim=8), atol=1e-5, rtol=1e-5)
-    torch.testing.assert_close(k_rot, reference_rope(k, positions, rotary_dim=8), atol=1e-5, rtol=1e-5)
+    torch.testing.assert_close(
+        q_rot, reference_rope(q, positions, rotary_dim=8), atol=1e-5, rtol=1e-5
+    )
+    torch.testing.assert_close(
+        k_rot, reference_rope(k, positions, rotary_dim=8), atol=1e-5, rtol=1e-5
+    )
 
 
 def test_equal_clocks_preserve_query_key_inner_product() -> None:
@@ -35,7 +47,9 @@ def test_equal_clocks_preserve_query_key_inner_product() -> None:
     clock = torch.rand(1, 4, 1)
     mask = torch.ones_like(clock, dtype=torch.bool)
     q_rot, k_rot = _fixed_rotary()(q, k, clock, clock, mask, mask)
-    torch.testing.assert_close((q_rot * k_rot).sum(dim=-1), (q * k).sum(dim=-1), atol=1e-5, rtol=1e-5)
+    torch.testing.assert_close(
+        (q_rot * k_rot).sum(dim=-1), (q * k).sum(dim=-1), atol=1e-5, rtol=1e-5
+    )
 
 
 def test_relative_phase_identity() -> None:

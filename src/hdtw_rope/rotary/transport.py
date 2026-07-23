@@ -21,17 +21,13 @@ def apply_rotary_pairs(x: Tensor, phases: Tensor, rotary_dim: int) -> Tensor:
             f"{tuple(x.shape)} and rotary_dim {rotary_dim}"
         )
     original_dtype = x.dtype
-    x_rot = x[..., :rotary_dim].float().reshape(
-        *x.shape[:3], rotary_dim // 2, 2
-    )
+    x_rot = x[..., :rotary_dim].float().reshape(*x.shape[:3], rotary_dim // 2, 2)
     x_pass = x[..., rotary_dim:]
     cos = torch.cos(phases.float())
     sin = torch.sin(phases.float())
     even = x_rot[..., 0]
     odd = x_rot[..., 1]
-    rotated = torch.stack(
-        (even * cos - odd * sin, even * sin + odd * cos), dim=-1
-    )
+    rotated = torch.stack((even * cos - odd * sin, even * sin + odd * cos), dim=-1)
     rotated = rotated.reshape(*x.shape[:3], rotary_dim).to(original_dtype)
     result = torch.cat((rotated, x_pass), dim=-1)
     if not torch.isfinite(result).all():
@@ -65,20 +61,12 @@ class ClockRotaryEmbedding(nn.Module):
         q_clock_mask: Tensor,
         k_clock_mask: Tensor,
     ) -> tuple[Tensor, Tensor]:
-        if (
-            q.shape[0] != k.shape[0]
-            or q.shape[1] != k.shape[1]
-            or q.shape[-1] != k.shape[-1]
-        ):
+        if q.shape[0] != k.shape[0] or q.shape[1] != k.shape[1] or q.shape[-1] != k.shape[-1]:
             raise ValueError("q and k batch/head/head-dimension shapes must match")
         if q.shape[1] != self.frequency_map.num_heads:
             raise ValueError("attention head count differs from frequency map")
-        q_phase = self.frequency_map(
-            q_clock, q_clock_mask, modulo=self.phase_modulo
-        )
-        k_phase = self.frequency_map(
-            k_clock, k_clock_mask, modulo=self.phase_modulo
-        )
+        q_phase = self.frequency_map(q_clock, q_clock_mask, modulo=self.phase_modulo)
+        k_phase = self.frequency_map(k_clock, k_clock_mask, modulo=self.phase_modulo)
         return (
             apply_rotary_pairs(q, q_phase, self.rotary_dim),
             apply_rotary_pairs(k, k_phase, self.rotary_dim),

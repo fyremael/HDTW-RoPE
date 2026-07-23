@@ -55,9 +55,7 @@ def slope_loss(
     return (violation * pair_mask).sum() / pair_mask.sum().clamp_min(1)
 
 
-def monotonicity_violation_count(
-    values: Tensor, mask: Tensor, *, tolerance: float = 0.0
-) -> Tensor:
+def monotonicity_violation_count(values: Tensor, mask: Tensor, *, tolerance: float = 0.0) -> Tensor:
     pair_mask = mask[:, :-1] & mask[:, 1:]
     return (((values[:, 1:] - values[:, :-1]) < -tolerance) & pair_mask).sum(dim=-1)
 
@@ -69,9 +67,7 @@ def _pav_1d(values: Tensor, weights: Tensor) -> Tensor:
     block_weights: list[float] = []
     block_starts: list[int] = []
     block_ends: list[int] = []
-    for index, (value, weight) in enumerate(
-        zip(values.tolist(), weights.tolist(), strict=True)
-    ):
+    for index, (value, weight) in enumerate(zip(values.tolist(), weights.tolist(), strict=True)):
         block_values.append(float(value))
         block_weights.append(float(weight))
         block_starts.append(index)
@@ -79,17 +75,14 @@ def _pav_1d(values: Tensor, weights: Tensor) -> Tensor:
         while len(block_values) >= 2 and block_values[-2] > block_values[-1]:
             total_weight = block_weights[-2] + block_weights[-1]
             merged_value = (
-                block_values[-2] * block_weights[-2]
-                + block_values[-1] * block_weights[-1]
+                block_values[-2] * block_weights[-2] + block_values[-1] * block_weights[-1]
             ) / max(total_weight, 1e-12)
             block_values[-2:] = [merged_value]
             block_weights[-2:] = [total_weight]
             block_ends[-2:] = [block_ends[-1]]
             block_starts.pop()
     projected = torch.empty_like(values)
-    for value, start, end in zip(
-        block_values, block_starts, block_ends, strict=True
-    ):
+    for value, start, end in zip(block_values, block_starts, block_ends, strict=True):
         projected[start:end] = value
     return projected
 
@@ -115,9 +108,7 @@ def isotonic_projection(
         if valid_count == 0:
             continue
         row = values[batch_index, :valid_count].detach().to("cpu", torch.float64)
-        row_weights = weights[batch_index, :valid_count].detach().to(
-            "cpu", torch.float64
-        )
+        row_weights = weights[batch_index, :valid_count].detach().to("cpu", torch.float64)
         row_projected = _pav_1d(row, row_weights).to(values.device, values.dtype)
         projected[batch_index, :valid_count] = row_projected
     if straight_through:

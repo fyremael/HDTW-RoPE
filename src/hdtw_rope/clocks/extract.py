@@ -126,18 +126,10 @@ class LatentClockExtractor(nn.Module):
             else:
                 target_direct = None
 
-            source_clock = torch.zeros(
-                (batch, source_length), device=device, dtype=torch.float32
-            )
-            target_clock = torch.zeros(
-                (batch, target_length), device=device, dtype=torch.float32
-            )
-            source_valid = torch.zeros(
-                (batch, source_length), device=device, dtype=torch.bool
-            )
-            target_valid = torch.zeros(
-                (batch, target_length), device=device, dtype=torch.bool
-            )
+            source_clock = torch.zeros((batch, source_length), device=device, dtype=torch.float32)
+            target_clock = torch.zeros((batch, target_length), device=device, dtype=torch.float32)
+            source_valid = torch.zeros((batch, source_length), device=device, dtype=torch.bool)
+            target_valid = torch.zeros((batch, target_length), device=device, dtype=torch.bool)
             source_mass = torch.zeros_like(source_clock)
             target_mass = torch.zeros_like(target_clock)
 
@@ -180,15 +172,11 @@ class LatentClockExtractor(nn.Module):
                 )
 
             if alignment is not None and self.strict:
-                if source_coordinate is None and torch.any(
-                    alignment.valid_rows & ~source_valid
-                ):
+                if source_coordinate is None and torch.any(alignment.valid_rows & ~source_valid):
                     raise InsufficientAlignmentMass(
                         f"component {component!r} has invalid source rows"
                     )
-                if target_coordinate is None and torch.any(
-                    alignment.valid_cols & ~target_valid
-                ):
+                if target_coordinate is None and torch.any(alignment.valid_cols & ~target_valid):
                     raise InsufficientAlignmentMass(
                         f"component {component!r} has invalid target columns"
                     )
@@ -201,9 +189,10 @@ class LatentClockExtractor(nn.Module):
                     target_clock, target_valid, straight_through=self.training
                 )
 
-            if not torch.isfinite(source_clock[source_valid]).all() or not torch.isfinite(
-                target_clock[target_valid]
-            ).all():
+            if (
+                not torch.isfinite(source_clock[source_valid]).all()
+                or not torch.isfinite(target_clock[target_valid]).all()
+            ):
                 raise InvalidClockError(f"component {component!r} produced nonfinite values")
 
             diagnostics[f"{component}/source_min"] = torch.where(

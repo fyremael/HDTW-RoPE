@@ -10,7 +10,13 @@ from hdtw_rope.types import AlignmentOutput
 
 
 def _alignment(mass: torch.Tensor) -> AlignmentOutput:
-    return AlignmentOutput(cost=torch.zeros_like(mass), value=torch.zeros(mass.shape[0]), mass=mass, valid_rows=mass.sum(dim=-1) > 0, valid_cols=mass.sum(dim=-2) > 0)
+    return AlignmentOutput(
+        cost=torch.zeros_like(mass),
+        value=torch.zeros(mass.shape[0]),
+        mass=mass,
+        valid_rows=mass.sum(dim=-1) > 0,
+        valid_cols=mass.sum(dim=-2) > 0,
+    )
 
 
 def test_hard_path_clock_extraction_is_monotone() -> None:
@@ -22,7 +28,14 @@ def test_hard_path_clock_extraction_is_monotone() -> None:
     target_coordinate = torch.tensor([[0.0, 0.5, 1.0]])
     source_mask = torch.ones(1, 4, dtype=torch.bool)
     target_mask = torch.ones(1, 3, dtype=torch.bool)
-    clocks = LatentClockExtractor(["aligned_word"])({"aligned_word": _alignment(mass)}, {}, {"aligned_word": target_coordinate}, {}, {"aligned_word": target_mask}, {})
+    clocks = LatentClockExtractor(["aligned_word"])(
+        {"aligned_word": _alignment(mass)},
+        {},
+        {"aligned_word": target_coordinate},
+        {},
+        {"aligned_word": target_mask},
+        {},
+    )
     torch.testing.assert_close(clocks.source_clock[0, :, 0], torch.tensor([0.0, 0.5, 0.5, 1.0]))
     assert monotonicity_violation_count(clocks.source_clock[..., 0], source_mask).item() == 0
     assert clocks.target_valid[..., 0].all()
@@ -30,9 +43,22 @@ def test_hard_path_clock_extraction_is_monotone() -> None:
 
 def test_invalid_mass_fails_closed() -> None:
     mass = torch.zeros(1, 2, 2)
-    alignment = AlignmentOutput(cost=torch.zeros_like(mass), value=torch.zeros(1), mass=mass, valid_rows=torch.ones(1, 2, dtype=torch.bool), valid_cols=torch.ones(1, 2, dtype=torch.bool))
+    alignment = AlignmentOutput(
+        cost=torch.zeros_like(mass),
+        value=torch.zeros(1),
+        mass=mass,
+        valid_rows=torch.ones(1, 2, dtype=torch.bool),
+        valid_cols=torch.ones(1, 2, dtype=torch.bool),
+    )
     with pytest.raises(InsufficientAlignmentMass):
-        LatentClockExtractor(["aligned_word"], strict=True)({"aligned_word": alignment}, {}, {"aligned_word": torch.tensor([[0.0, 1.0]])}, {}, {"aligned_word": torch.ones(1, 2, dtype=torch.bool)}, {})
+        LatentClockExtractor(["aligned_word"], strict=True)(
+            {"aligned_word": alignment},
+            {},
+            {"aligned_word": torch.tensor([[0.0, 1.0]])},
+            {},
+            {"aligned_word": torch.ones(1, 2, dtype=torch.bool)},
+            {},
+        )
 
 
 def test_isotonic_projection_removes_violations() -> None:

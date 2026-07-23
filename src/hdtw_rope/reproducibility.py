@@ -35,7 +35,10 @@ def _git_state(repository: Path) -> tuple[str | None, bool | None]:
         ).strip()
         dirty = bool(
             subprocess.check_output(
-                ["git", "status", "--porcelain"], cwd=repository, text=True, stderr=subprocess.DEVNULL
+                ["git", "status", "--porcelain"],
+                cwd=repository,
+                text=True,
+                stderr=subprocess.DEVNULL,
             ).strip()
         )
         return commit, dirty
@@ -43,7 +46,9 @@ def _git_state(repository: Path) -> tuple[str | None, bool | None]:
         return None, None
 
 
-def package_versions(names: tuple[str, ...] = ("torch", "PyYAML", "hdtw-rope")) -> dict[str, str | None]:
+def package_versions(
+    names: tuple[str, ...] = ("torch", "PyYAML", "hdtw-rope"),
+) -> dict[str, str | None]:
     versions: dict[str, str | None] = {}
     for name in names:
         try:

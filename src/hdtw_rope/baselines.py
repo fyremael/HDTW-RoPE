@@ -28,7 +28,9 @@ class AdditivePositionEmbedding(nn.Module):
         self.audio = nn.Embedding(max_audio_tokens, model_dim)
         self.lyrics = nn.Embedding(max_lyric_tokens, model_dim)
 
-    def forward(self, audio: Tensor, lyrics: Tensor, audio_mask: Tensor, lyric_mask: Tensor) -> tuple[Tensor, Tensor]:
+    def forward(
+        self, audio: Tensor, lyrics: Tensor, audio_mask: Tensor, lyric_mask: Tensor
+    ) -> tuple[Tensor, Tensor]:
         audio_index = torch.arange(audio.shape[1], device=audio.device)
         lyric_index = torch.arange(lyrics.shape[1], device=lyrics.device)
         audio_out = audio + self.audio(audio_index)[None, :, :]
@@ -39,7 +41,16 @@ class AdditivePositionEmbedding(nn.Module):
         )
 
 
-def baseline_clock_output(*, mode: BaselineMode, component_names: Sequence[str], audio_mask: Tensor, lyric_mask: Tensor, audio_coordinates: Mapping[str, Tensor] | None = None, lyric_coordinates: Mapping[str, Tensor] | None = None, learned_clocks: ClockOutput | None = None) -> ClockOutput:
+def baseline_clock_output(
+    *,
+    mode: BaselineMode,
+    component_names: Sequence[str],
+    audio_mask: Tensor,
+    lyric_mask: Tensor,
+    audio_coordinates: Mapping[str, Tensor] | None = None,
+    lyric_coordinates: Mapping[str, Tensor] | None = None,
+    learned_clocks: ClockOutput | None = None,
+) -> ClockOutput:
     batch, audio_length = audio_mask.shape
     lyric_length = lyric_mask.shape[1]
     component_count = len(component_names)
@@ -57,19 +68,30 @@ def baseline_clock_output(*, mode: BaselineMode, component_names: Sequence[str],
         audio_valid[..., 0] = audio_mask
         lyric_valid[..., 0] = lyric_mask
     elif mode == BaselineMode.TIMESTAMP_ROPE:
-        if "absolute_seconds" not in audio_coordinates or "absolute_seconds" not in lyric_coordinates:
+        if (
+            "absolute_seconds" not in audio_coordinates
+            or "absolute_seconds" not in lyric_coordinates
+        ):
             raise ValueError("timestamp RoPE requires seconds for both modalities")
-        audio_clock[..., 0] = normalize_unit_interval(audio_coordinates["absolute_seconds"], audio_mask)
-        lyric_clock[..., 0] = normalize_unit_interval(lyric_coordinates["absolute_seconds"], lyric_mask)
+        audio_clock[..., 0] = normalize_unit_interval(
+            audio_coordinates["absolute_seconds"], audio_mask
+        )
+        lyric_clock[..., 0] = normalize_unit_interval(
+            lyric_coordinates["absolute_seconds"], lyric_mask
+        )
         audio_valid[..., 0] = audio_mask
         lyric_valid[..., 0] = lyric_mask
     elif mode == BaselineMode.MULTI_CLOCK_ROPE:
         for index, name in enumerate(component_names):
             if name in audio_coordinates:
-                audio_clock[..., index] = normalize_unit_interval(audio_coordinates[name], audio_mask)
+                audio_clock[..., index] = normalize_unit_interval(
+                    audio_coordinates[name], audio_mask
+                )
                 audio_valid[..., index] = audio_mask
             if name in lyric_coordinates:
-                lyric_clock[..., index] = normalize_unit_interval(lyric_coordinates[name], lyric_mask)
+                lyric_clock[..., index] = normalize_unit_interval(
+                    lyric_coordinates[name], lyric_mask
+                )
                 lyric_valid[..., index] = lyric_mask
     elif mode in {BaselineMode.HDTW_SINGLE_CLOCK, BaselineMode.HDTW_HIERARCHICAL}:
         if learned_clocks is None:
@@ -81,7 +103,17 @@ def baseline_clock_output(*, mode: BaselineMode, component_names: Sequence[str],
         audio_valid[..., 0] = learned_clocks.source_valid[..., 0]
         lyric_valid[..., 0] = learned_clocks.target_valid[..., 0]
     elif mode == BaselineMode.ADDITIVE:
-        raise ValueError("additive positions are applied to features, not represented as rotary clocks")
+        raise ValueError(
+            "additive positions are applied to features, not represented as rotary clocks"
+        )
     else:  # pragma: no cover
         raise ValueError(f"unsupported baseline mode: {mode}")
-    return ClockOutput(source_clock=audio_clock, target_clock=lyric_clock, source_valid=audio_valid, target_valid=lyric_valid, diagnostics={"baseline_mode": torch.tensor(list(BaselineMode).index(mode), device=audio_mask.device)})
+    return ClockOutput(
+        source_clock=audio_clock,
+        target_clock=lyric_clock,
+        source_valid=audio_valid,
+        target_valid=lyric_valid,
+        diagnostics={
+            "baseline_mode": torch.tensor(list(BaselineMode).index(mode), device=audio_mask.device)
+        },
+    )

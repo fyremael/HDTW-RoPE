@@ -15,10 +15,16 @@ def test_soft_dtw_approaches_hard_dtw() -> None:
 
 
 def test_soft_dtw_gradcheck() -> None:
-    cost = torch.tensor([[[0.1, 0.7, 1.2], [0.5, 0.2, 0.8], [1.0, 0.4, 0.1]]], dtype=torch.float64, requires_grad=True)
+    cost = torch.tensor(
+        [[[0.1, 0.7, 1.2], [0.5, 0.2, 0.8], [1.0, 0.4, 0.1]]],
+        dtype=torch.float64,
+        requires_grad=True,
+    )
     mask = torch.ones(1, 3, dtype=torch.bool)
+
     def function(value: torch.Tensor) -> torch.Tensor:
         return soft_dtw_value(value, mask, mask, temperature=0.2)
+
     assert torch.autograd.gradcheck(function, (cost,), eps=1e-6, atol=1e-4, rtol=1e-3)
 
 
