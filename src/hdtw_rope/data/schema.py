@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Mapping
 
 import torch
 from torch import Tensor
@@ -149,7 +149,7 @@ class LyricMusicBatch:
     hierarchy: Mapping[str, Mapping[str, Tensor]]
     metadata: tuple[Mapping[str, object], ...]
 
-    def to(self, device: torch.device | str) -> "LyricMusicBatch":
+    def to(self, device: torch.device | str) -> LyricMusicBatch:
         def move_mapping(mapping: Mapping[str, Tensor]) -> dict[str, Tensor]:
             return {key: value.to(device) for key, value in mapping.items()}
 

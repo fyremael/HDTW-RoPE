@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import torch
 from torch import Tensor
 
 from hdtw_rope.rotary.frequencies import standard_inverse_frequencies
