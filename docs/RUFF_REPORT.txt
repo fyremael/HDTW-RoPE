@@ -1,0 +1,18 @@
+SIM102 Use a single `if` statement instead of nested `if` statements
+  --> src/hdtw_rope/config.py:70:5
+   |
+68 |           raise ConfigError("version 0.1 requires a shared modality frequency map")
+69 |       partition = rotary.get("partition", {})
+70 | /     if rotary.get("frequency_mode") == "clock_partitioned":
+71 | |         if (
+72 | |             not isinstance(partition, dict)
+73 | |             or sum(float(value) for value in partition.values()) > 1.0 + 1e-6
+74 | |         ):
+   | |__________^
+75 |               raise ConfigError("rotary.partition must be a mapping summing to at most one")
+76 |       if int(model.get("cross_attention_layers", 0)) <= 0:
+   |
+help: Combine `if` statements using `and`
+
+Found 1 error.
+No fixes available (1 hidden fix can be enabled with the `--unsafe-fixes` option).
