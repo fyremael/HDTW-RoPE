@@ -138,6 +138,7 @@ class LatentClockExtractor(nn.Module):
                     raise InvalidClockError(
                         f"source coordinate {component!r} has incompatible shape"
                     )
+                assert source_mask is not None
                 source_clock = source_direct
                 source_valid = source_mask
             elif alignment is not None:
@@ -157,6 +158,7 @@ class LatentClockExtractor(nn.Module):
                     raise InvalidClockError(
                         f"target coordinate {component!r} has incompatible shape"
                     )
+                assert target_mask is not None
                 target_clock = target_direct
                 target_valid = target_mask
             elif alignment is not None:
