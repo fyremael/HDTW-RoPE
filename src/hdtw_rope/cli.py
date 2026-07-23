@@ -6,20 +6,27 @@ import argparse
 import json
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import torch
+from torch import Tensor
 
 from hdtw_rope.alignment.bands import diagonal_band_mask
 from hdtw_rope.config import load_config
 from hdtw_rope.data.collate import collate_lyric_music
-from hdtw_rope.data.schema import CLOCK_SCHEMA_VERSION
+from hdtw_rope.data.schema import CLOCK_SCHEMA_VERSION, LyricMusicBatch
 from hdtw_rope.data.synthetic import generate_synthetic_pair
 from hdtw_rope.diagnostics import alignment_diagnostics, clock_diagnostics, write_metrics
 from hdtw_rope.losses import HDTWRoPELoss
 from hdtw_rope.metrics import retrieval_metrics
-from hdtw_rope.models.hdtw_rope_model import DifferentiableClockBuilder, HDTWRoPEModel
+from hdtw_rope.models.hdtw_rope_model import (
+    DifferentiableClockBuilder,
+    HDTWRoPEModel,
+    ModelOutput,
+)
 from hdtw_rope.reproducibility import build_run_manifest, save_run_manifest, seed_everything
+from hdtw_rope.rotary.frequencies import FrequencyMode
+from hdtw_rope.types import AlignmentOutput, ClockOutput
 
 FAMILY_COMPONENTS: dict[str, tuple[str, ...]] = {
     "absolute_seconds": ("absolute_seconds",),
@@ -38,7 +45,9 @@ def _device(config: Mapping[str, Any]) -> torch.device:
     return torch.device(requested)
 
 
-def _synthetic_batch(config: Mapping[str, Any], batch_size: int | None = None):
+def _synthetic_batch(
+    config: Mapping[str, Any], batch_size: int | None = None
+) -> LyricMusicBatch:
     count = batch_size or int(config["training"]["batch_size"])
     feature_dim = int(config["input"]["audio_feature_dim"])
     max_audio = min(int(config["input"]["max_audio_tokens"]), 96)
@@ -57,7 +66,16 @@ def _synthetic_batch(config: Mapping[str, Any], batch_size: int | None = None):
     return collate_lyric_music(samples)
 
 
-def _clock_inputs(batch, components: list[str]):
+def _clock_inputs(
+    batch: LyricMusicBatch,
+    components: list[str],
+) -> tuple[
+    dict[str, Tensor],
+    dict[str, Tensor],
+    dict[str, Tensor],
+    dict[str, Tensor],
+    list[str],
+]:
     source_coordinates = dict(batch.audio_coordinates)
     target_coordinates = dict(batch.lyric_coordinates)
     source_masks = dict(batch.audio_coordinate_masks)
@@ -72,7 +90,9 @@ def _clock_inputs(batch, components: list[str]):
     return source_coordinates, target_coordinates, source_masks, target_masks, aligned_components
 
 
-def _build_modules(config: Mapping[str, Any], device: torch.device):
+def _build_modules(
+    config: Mapping[str, Any], device: torch.device
+) -> tuple[DifferentiableClockBuilder, HDTWRoPEModel]:
     components = list(config["clock"]["components"])
     source_dim = int(config["input"]["audio_feature_dim"])
     target_dim = int(config["input"]["lyric_feature_dim"])
@@ -86,6 +106,7 @@ def _build_modules(config: Mapping[str, Any], device: torch.device):
         min_alignment_mass=float(config["alignment"]["min_alignment_mass"]),
         differentiable_mass=False,
     ).to(device)
+    frequency_mode = cast(FrequencyMode, str(config["rotary"]["frequency_mode"]))
     model = HDTWRoPEModel(
         audio_dim=source_dim,
         lyric_dim=target_dim,
@@ -95,7 +116,7 @@ def _build_modules(config: Mapping[str, Any], device: torch.device):
         clock_components=components,
         cross_attention_layers=int(config["model"]["cross_attention_layers"]),
         dropout=float(config["model"]["dropout"]),
-        frequency_mode=str(config["rotary"]["frequency_mode"]),
+        frequency_mode=frequency_mode,
         partition=config["rotary"].get("partition"),
         family_components=FAMILY_COMPONENTS,
         learn_clock_adapters=False,
@@ -103,7 +124,12 @@ def _build_modules(config: Mapping[str, Any], device: torch.device):
     return builder, model
 
 
-def _forward(config: Mapping[str, Any], batch, builder, model):
+def _forward(
+    config: Mapping[str, Any],
+    batch: LyricMusicBatch,
+    builder: DifferentiableClockBuilder,
+    model: HDTWRoPEModel,
+) -> tuple[ClockOutput, AlignmentOutput, dict[str, AlignmentOutput], ModelOutput]:
     source_coordinates, target_coordinates, source_masks, target_masks, aligned_components = (
         _clock_inputs(batch, list(config["clock"]["components"]))
     )
@@ -279,7 +305,7 @@ def render_main(argv: list[str] | None = None) -> None:
     parser.add_argument("--sample", type=int, default=0)
     args = parser.parse_args(argv)
     try:
-        import matplotlib.pyplot as plt
+        import matplotlib.pyplot as plt  # type: ignore[import-not-found]
     except ImportError as error:  # pragma: no cover
         raise SystemExit("Install hdtw-rope[viz] to render alignments") from error
     artifact = torch.load(args.artifact, map_location="cpu", weights_only=True)
