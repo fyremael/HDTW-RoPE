@@ -1,0 +1,3 @@
+baseline:
+  mode: hdtw_single_clock
+  description: A single DTW-derived lyric-local clock.

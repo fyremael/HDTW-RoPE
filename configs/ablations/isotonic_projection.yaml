@@ -1,0 +1,3 @@
+clock:
+  monotonicity_mode: project
+  isotonic_projection_at_eval: true

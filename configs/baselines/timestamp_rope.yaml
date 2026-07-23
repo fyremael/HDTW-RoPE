@@ -1,0 +1,3 @@
+baseline:
+  mode: timestamp_rope
+  description: RoPE over physical seconds available in both modalities.

@@ -1,0 +1,3 @@
+baseline:
+  mode: additive
+  description: Learned modality-specific additive position embeddings.

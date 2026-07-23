@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://grandchallenge.ai/schemas/agent-review-v1.json",
+  "title": "GCL Agent Review",
+  "type": "object",
+  "required": ["schema_version", "work_package", "status", "reviews", "unresolved"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "work_package": {"type": "string", "minLength": 1},
+    "status": {"enum": ["draft", "in_review", "accepted", "blocked"]},
+    "reviews": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["status", "obligations"],
+        "properties": {
+          "status": {"enum": ["pending", "partial", "complete", "blocked"]},
+          "obligations": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "unresolved": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

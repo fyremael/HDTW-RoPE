@@ -1,0 +1,4 @@
+alignment:
+  method: soft_dtw
+  band:
+    enabled: false

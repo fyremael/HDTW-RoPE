@@ -1,0 +1,65 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hdtw-rope"
+version = "0.1.0"
+description = "DTW-derived hierarchical latent clocks for unitary rotary transport in lyric-music alignment"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{name = "Grand Challenge Labs"}]
+dependencies = [
+  "torch>=2.3",
+  "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2",
+  "pytest-cov>=5.0",
+  "ruff>=0.6",
+  "mypy>=1.11",
+]
+viz = ["matplotlib>=3.8"]
+
+[project.scripts]
+hdtw-precompute-clocks = "hdtw_rope.cli:precompute_main"
+hdtw-train = "hdtw_rope.cli:train_main"
+hdtw-evaluate = "hdtw_rope.cli:evaluate_main"
+hdtw-render-alignment = "hdtw_rope.cli:render_main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hdtw_rope"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers --strict-config"
+testpaths = ["tests"]
+markers = [
+  "slow: tests that exercise larger synthetic examples",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+show_error_codes = true
+packages = ["hdtw_rope"]
+mypy_path = "src"
+
+[tool.coverage.run]
+branch = true
+source = ["hdtw_rope"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

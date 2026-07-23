@@ -1,0 +1,3 @@
+baseline:
+  mode: hdtw_hierarchical
+  description: Full vector-valued hierarchical DTW-derived clock.
