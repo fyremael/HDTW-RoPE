@@ -1,2 +1,0 @@
-src/hdtw_rope/alignment/hierarchical.py:56: error: Returning Any from function declared to return "AlignmentOutput"  [no-any-return]
-Found 1 error in 1 file (checked 36 source files)
