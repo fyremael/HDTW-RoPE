@@ -40,12 +40,18 @@ def _single_soft_dtw(
                 dp[i][j] = cost[i, j]
                 continue
             predecessors: list[Tensor] = []
-            if i > 0 and dp[i - 1][j] is not None:
-                predecessors.append(dp[i - 1][j] + penalties.vertical)
-            if j > 0 and dp[i][j - 1] is not None:
-                predecessors.append(dp[i][j - 1] + penalties.horizontal)
-            if i > 0 and j > 0 and dp[i - 1][j - 1] is not None:
-                predecessors.append(dp[i - 1][j - 1] + penalties.diagonal)
+            if i > 0:
+                vertical = dp[i - 1][j]
+                if vertical is not None:
+                    predecessors.append(vertical + penalties.vertical)
+            if j > 0:
+                horizontal = dp[i][j - 1]
+                if horizontal is not None:
+                    predecessors.append(horizontal + penalties.horizontal)
+            if i > 0 and j > 0:
+                diagonal = dp[i - 1][j - 1]
+                if diagonal is not None:
+                    predecessors.append(diagonal + penalties.diagonal)
             if predecessors:
                 dp[i][j] = cost[i, j] + _soft_min(predecessors, temperature)
     return dp[-1][-1]
