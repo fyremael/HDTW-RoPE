@@ -45,9 +45,7 @@ def _device(config: Mapping[str, Any]) -> torch.device:
     return torch.device(requested)
 
 
-def _synthetic_batch(
-    config: Mapping[str, Any], batch_size: int | None = None
-) -> LyricMusicBatch:
+def _synthetic_batch(config: Mapping[str, Any], batch_size: int | None = None) -> LyricMusicBatch:
     count = batch_size or int(config["training"]["batch_size"])
     feature_dim = int(config["input"]["audio_feature_dim"])
     max_audio = min(int(config["input"]["max_audio_tokens"]), 96)
