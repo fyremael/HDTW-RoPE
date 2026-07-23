@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import torch
 from torch import Tensor, nn
 
@@ -16,7 +18,7 @@ class FeatureProjection(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x: Tensor) -> Tensor:
-        return self.dropout(self.linear(self.norm(x)))
+        return cast(Tensor, self.dropout(self.linear(self.norm(x))))
 
 
 class ClockAdapter(nn.Module):
