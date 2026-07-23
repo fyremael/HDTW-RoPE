@@ -31,7 +31,7 @@ jobs:
           ruff check . > docs/RUFF_REPORT.txt 2>&1 || true
       - name: Commit quality state
         run: |
-          if git diff --quiet; then
+          if [ -z "$(git status --porcelain)" ]; then
             exit 0
           fi
           git config user.name "github-actions[bot]"
