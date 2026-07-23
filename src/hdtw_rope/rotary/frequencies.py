@@ -50,6 +50,10 @@ class ClockFrequencyMap(nn.Module):
     clock adapters belong before this module.
     """
 
+    fixed_omega: Tensor
+    raw_omega: nn.Parameter | None
+    phase_offset: Tensor
+
     def __init__(
         self,
         *,
