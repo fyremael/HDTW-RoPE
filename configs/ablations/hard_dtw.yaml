@@ -1,0 +1,4 @@
+alignment:
+  method: hard_dtw
+clock:
+  offline: true

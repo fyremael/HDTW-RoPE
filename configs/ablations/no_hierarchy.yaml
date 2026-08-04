@@ -1,0 +1,4 @@
+clock:
+  components: [absolute_seconds, aligned_word]
+loss:
+  hierarchy: 0.0

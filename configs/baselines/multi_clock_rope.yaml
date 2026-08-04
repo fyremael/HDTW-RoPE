@@ -1,0 +1,3 @@
+baseline:
+  mode: multi_clock_rope
+  description: Non-warped physical and hierarchical coordinates without DTW-derived clocks.

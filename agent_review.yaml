@@ -1,0 +1,36 @@
+schema_version: 1
+work_package: initial-reference-implementation
+status: in_review
+reviews:
+  axiomatist:
+    status: complete
+    obligations:
+      - Verify DTW-derived expectation clocks and shared rotary identity.
+  cartographer:
+    status: complete
+    obligations:
+      - Confirm module boundaries follow the normative implementation order.
+  verifier:
+    status: complete
+    obligations:
+      - Execute mathematical, mask, gradient, synthetic, and smoke tests.
+  adversary:
+    status: partial
+    obligations:
+      - Add real-data tests for repeated choruses, missing lines, and cover versions.
+      - Stress online alignment against severe band misspecification.
+  formalist:
+    status: complete
+    obligations:
+      - Validate shapes, masks, clock schema order, and fail-closed exceptions.
+  amanuensis:
+    status: complete
+    obligations:
+      - Maintain decision, terminology, and artifact ledgers.
+  referee:
+    status: blocked
+    obligations:
+      - Evaluate the empirical advancement gate on held-out real datasets.
+unresolved:
+  - Fused kernels are forbidden until reference performance is profiled.
+  - No empirical superiority claim is authorized by synthetic tests alone.

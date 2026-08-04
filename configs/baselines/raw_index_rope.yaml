@@ -1,0 +1,3 @@
+baseline:
+  mode: raw_index_rope
+  description: Canonical RoPE over normalized modality-native token indices.

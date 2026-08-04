@@ -1,0 +1,60 @@
+project:
+  name: hdtw-rope
+  version: 0.1.0
+  seed: 1337
+runtime:
+  device: cuda
+  precision: bf16
+  alignment_precision: float32
+  phase_precision: float32
+  deterministic: true
+  gradient_checkpointing: true
+input:
+  max_audio_tokens: 2048
+  max_lyric_tokens: 512
+  audio_feature_dim: 768
+  lyric_feature_dim: 768
+  hierarchy_levels: [section, line, word, syllable]
+alignment:
+  method: soft_dtw
+  cost: cosine
+  shared_dim: 256
+  temperature: {initial: 0.20, final: 0.05, anneal_steps: 20000}
+  transition_penalties: {horizontal: 0.05, vertical: 0.05, diagonal: 0.0}
+  band: {enabled: true, half_width: 128, coarse_to_fine: true}
+  min_alignment_mass: 1.0e-6
+clock:
+  normalization: unit_interval
+  monotonicity_mode: penalty
+  isotonic_projection_at_eval: true
+  minimum_slope: 0.0
+  maximum_slope: 8.0
+  components: [absolute_seconds, beat, bar, section_occurrence, section_relative, aligned_syllable, aligned_word, aligned_line, aligned_section]
+rotary:
+  model_dim: 768
+  num_heads: 12
+  rotary_dim: 64
+  frequency_mode: clock_partitioned
+  shared_between_modalities: true
+  phase_offset: false
+  phase_modulo: true
+  partition: {absolute_seconds: 0.20, beat: 0.15, bar: 0.15, lyric_local: 0.25, phrase_line: 0.15, section_form: 0.10}
+model:
+  encoder_mode: frozen
+  cross_attention_layers: 4
+  dropout: 0.1
+  bidirectional_cross_attention: true
+loss: {task: 1.0, soft_dtw: 0.2, anchor: 0.5, monotonicity: 0.05, smoothness: 0.01, slope: 0.01, hierarchy: 0.1, cycle: 0.05, entropy: 0.001}
+training:
+  batch_size: 4
+  gradient_accumulation_steps: 8
+  learning_rate: 3.0e-4
+  weight_decay: 0.01
+  warmup_steps: 2000
+  max_steps: 100000
+  detach_alignment_steps: 5000
+  gradient_clip_norm: 1.0
+evaluation:
+  onset_tolerances_seconds: [0.1, 0.3, 0.5, 1.0]
+  retrieval_k: [1, 5, 10]
+  bootstrap_samples: 10000
